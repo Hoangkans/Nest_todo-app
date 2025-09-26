@@ -17,23 +17,28 @@ export class TodoService {
   /**
    * Tạo mới một công việc (Todo)
    * @param createTodoDto dữ liệu đầu vào (title, content)
+   * @param user user hiện tại
    * @returns Todo vừa được tạo
    */
-  async create(createTodoDto: CreateTodoDto): Promise<Todo> {
-    const todo = new this.todoModel(createTodoDto);
+  async create(createTodoDto: CreateTodoDto, user: any): Promise<Todo> {
+    const todo = new this.todoModel({
+      ...createTodoDto,
+      userId: user._id,
+    });
     return todo.save();
   }
 
   /**
    * Lấy danh sách công việc (có hỗ trợ tìm kiếm + phân trang)
    * @param query tham số query (keyword, status, limit, offset)
+   * @param user user hiện tại
    * @returns danh sách công việc + meta (phân trang)
    */
-  async findAll(query: QueryTodoDto) {
+  async findAll(query: QueryTodoDto, user: any) {
     const { keyword, status, limit, offset } = query;
 
     // Tạo object filter để tìm kiếm theo status và keyword
-    const filter: { [key: string]: any } = {};
+    const filter: { [key: string]: any } = { userId: user._id };
     if (status) filter.status = status;
     if (keyword) filter.title = { $regex: keyword, $options: 'i' }; // tìm kiếm theo title, không phân biệt hoa/thường
 
@@ -61,10 +66,13 @@ export class TodoService {
   /**
    * Lấy chi tiết một công việc theo id
    * @param id id của Todo
+   * @param user user hiện tại
    * @returns thông tin Todo
    */
-  async findOne(id: string): Promise<Todo> {
-    const todo = await this.todoModel.findById(id).exec();
+  async findOne(id: string, user: any): Promise<Todo> {
+    const todo = await this.todoModel
+      .findOne({ _id: id, userId: user._id })
+      .exec();
     if (!todo) throw new NotFoundException('Không tìm thấy công việc');
     return todo;
   }
@@ -73,12 +81,19 @@ export class TodoService {
    * Cập nhật công việc theo id
    * @param id id của Todo
    * @param updateTodoDto dữ liệu cần cập nhật
+   * @param user user hiện tại
    * @returns Todo sau khi cập nhật
    */
-  async update(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo> {
-    const todo = await this.todoModel.findByIdAndUpdate(id, updateTodoDto, {
-      new: true, // trả về dữ liệu sau khi update
-    });
+  async update(
+    id: string,
+    updateTodoDto: UpdateTodoDto,
+    user: any,
+  ): Promise<Todo> {
+    const todo = await this.todoModel.findOneAndUpdate(
+      { _id: id, userId: user._id },
+      updateTodoDto,
+      { new: true }, // trả về dữ liệu sau khi update
+    );
     if (!todo) throw new NotFoundException('Không tìm thấy công việc');
     return todo;
   }
@@ -86,9 +101,12 @@ export class TodoService {
   /**
    * Xóa công việc theo id
    * @param id id của Todo
+   * @param user user hiện tại
    */
-  async remove(id: string): Promise<void> {
-    const result = await this.todoModel.findByIdAndDelete(id).exec();
+  async remove(id: string, user: any): Promise<void> {
+    const result = await this.todoModel
+      .findOneAndDelete({ _id: id, userId: user._id })
+      .exec();
     if (!result) throw new NotFoundException('Không tìm thấy công việc');
   }
 }

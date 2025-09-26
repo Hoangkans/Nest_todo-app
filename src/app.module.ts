@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TodoModule } from './todo/todo.module';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,7 +25,9 @@ import { TodoModule } from './todo/todo.module';
       },
     }),
 
-    // Import module Todo
+    // Import module
+    UserModule,
+    AuthModule,
     TodoModule,
   ],
 })
